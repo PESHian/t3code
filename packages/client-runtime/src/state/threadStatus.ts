@@ -41,8 +41,8 @@ export function resolveThreadListStatus(thread: ThreadListStatusInput): ThreadLi
 
 /**
  * True when the latest turn finished after the reader last opened the thread. A thread never
- * visited counts as read, so a device that has just started tracking visits does not light up
- * every settled thread at once. An unreadable visit stamp counts as unread.
+ * opened on this device counts as read, so a device that has just started tracking visits does
+ * not light up every settled thread at once. An unreadable visit stamp counts as unread.
  */
 export function hasUnseenCompletion(
   thread: Pick<OrchestrationThreadShell, "latestTurn">,
@@ -56,6 +56,19 @@ export function hasUnseenCompletion(
   const lastVisitedAtMs = Date.parse(lastVisitedAt);
   if (Number.isNaN(lastVisitedAtMs)) return true;
   return completedAt > lastVisitedAtMs;
+}
+
+/**
+ * What a visit stamps: the latest completion when there is one, so the label clears exactly the
+ * completion the reader saw and a later completion still signals. With no completion yet (a
+ * fresh thread, or its first turn still running) the stamp is the visit time, so a thread the
+ * reader started and walked away from still lights up when its first turn finishes.
+ */
+export function resolveThreadVisitStamp(
+  latestTurnCompletedAt: string | null | undefined,
+  visitedAt: string,
+): string {
+  return latestTurnCompletedAt ?? visitedAt;
 }
 
 /** The timestamp a working thread's elapsed label counts from: the running

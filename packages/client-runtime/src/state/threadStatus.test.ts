@@ -3,6 +3,7 @@ import { describe, expect, it } from "vite-plus/test";
 import {
   formatWorkingDurationLabel,
   hasUnseenCompletion,
+  resolveThreadVisitStamp,
   resolveThreadListStatus,
   resolveWorkingStartedAt,
   withThreadMarkedUnread,
@@ -85,6 +86,26 @@ describe("hasUnseenCompletion", () => {
 
   it("treats an unreadable visit stamp as unread", () => {
     expect(hasUnseenCompletion({ latestTurn }, "not a date")).toBe(true);
+  });
+});
+
+describe("resolveThreadVisitStamp", () => {
+  it("stamps the latest completion when there is one", () => {
+    expect(resolveThreadVisitStamp("2026-01-01T00:00:10.000Z", "2026-01-01T00:01:00.000Z")).toBe(
+      "2026-01-01T00:00:10.000Z",
+    );
+  });
+
+  it("stamps the visit time when nothing has completed yet, so the first completion reads unread", () => {
+    const visitedAt = "2026-01-01T00:01:00.000Z";
+    expect(resolveThreadVisitStamp(undefined, visitedAt)).toBe(visitedAt);
+    expect(resolveThreadVisitStamp(null, visitedAt)).toBe(visitedAt);
+    expect(
+      hasUnseenCompletion(
+        { latestTurn: { completedAt: "2026-01-01T00:02:00.000Z" } as never },
+        visitedAt,
+      ),
+    ).toBe(true);
   });
 });
 

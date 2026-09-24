@@ -1,3 +1,5 @@
+import { resolveThreadVisitStamp } from "@t3tools/client-runtime/state/thread-status";
+
 import { useMarkThreadVisited } from "./use-thread-visits";
 import { makeTurnCommandMetadata } from "../../lib/commandMetadata";
 import { enqueueThreadOutboxMessage } from "../../state/thread-outbox";
@@ -337,9 +339,8 @@ function ThreadRouteContent(
   } = useThreadSelection();
   const selectedThreadDetailState = props.selectedThreadDetailState;
   const selectedThreadDetail = Option.getOrNull(selectedThreadDetailState.data);
-  // Reading a finished thread clears the list's Done label. The visit is stamped at the
-  // turn's completion time, not now, so it clears exactly the completion the reader is
-  // looking at; a completion that lands later still gets its signal.
+  // Opening a thread stamps a visit so the list's Done label clears, and so a completion that
+  // lands after the reader leaves still signals. See resolveThreadVisitStamp for what is stamped.
   const markThreadVisited = useMarkThreadVisited();
   const visitedThreadKey =
     selectedThread === null
@@ -347,8 +348,11 @@ function ThreadRouteContent(
       : scopedThreadKey(selectedThread.environmentId, selectedThread.id);
   const visitedCompletedAt = selectedThread?.latestTurn?.completedAt ?? null;
   useEffect(() => {
-    if (visitedThreadKey === null || visitedCompletedAt === null) return;
-    markThreadVisited(visitedThreadKey, visitedCompletedAt);
+    if (visitedThreadKey === null) return;
+    markThreadVisited(
+      visitedThreadKey,
+      resolveThreadVisitStamp(visitedCompletedAt, new Date().toISOString()),
+    );
   }, [markThreadVisited, visitedThreadKey, visitedCompletedAt]);
   // "Load earlier turns" header state for windowed (paginated) thread loads.
   const loadEarlierTurns = useMemo(() => {
