@@ -61,14 +61,15 @@ export function hasUnseenCompletion(
 /**
  * What a visit stamps: the latest completion when there is one, so the label clears exactly the
  * completion the reader saw and a later completion still signals. With no completion yet (a
- * fresh thread, or its first turn still running) the stamp is the visit time, so a thread the
- * reader started and walked away from still lights up when its first turn finishes.
+ * fresh thread, or its first turn still running) the stamp is the running turn's request time,
+ * or the thread's last server update, so a thread the reader started and walked away from still
+ * lights up when its first turn finishes. Every candidate is a server clock: a client clock that
+ * runs ahead of the server would outrank a completion that lands seconds later and hide it.
  */
 export function resolveThreadVisitStamp(
-  latestTurnCompletedAt: string | null | undefined,
-  visitedAt: string,
+  thread: Pick<OrchestrationThreadShell, "latestTurn" | "updatedAt">,
 ): string {
-  return latestTurnCompletedAt ?? visitedAt;
+  return thread.latestTurn?.completedAt ?? thread.latestTurn?.requestedAt ?? thread.updatedAt;
 }
 
 /** The timestamp a working thread's elapsed label counts from: the running

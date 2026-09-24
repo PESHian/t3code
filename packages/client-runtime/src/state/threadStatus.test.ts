@@ -90,22 +90,37 @@ describe("hasUnseenCompletion", () => {
 });
 
 describe("resolveThreadVisitStamp", () => {
+  const updatedAt = "2026-01-01T00:00:00.000Z";
+
   it("stamps the latest completion when there is one", () => {
-    expect(resolveThreadVisitStamp("2026-01-01T00:00:10.000Z", "2026-01-01T00:01:00.000Z")).toBe(
-      "2026-01-01T00:00:10.000Z",
-    );
+    expect(
+      resolveThreadVisitStamp({
+        updatedAt,
+        latestTurn: {
+          requestedAt: "2026-01-01T00:00:05.000Z",
+          completedAt: "2026-01-01T00:00:10.000Z",
+        } as never,
+      }),
+    ).toBe("2026-01-01T00:00:10.000Z");
   });
 
-  it("stamps the visit time when nothing has completed yet, so the first completion reads unread", () => {
-    const visitedAt = "2026-01-01T00:01:00.000Z";
-    expect(resolveThreadVisitStamp(undefined, visitedAt)).toBe(visitedAt);
-    expect(resolveThreadVisitStamp(null, visitedAt)).toBe(visitedAt);
+  it("stamps the running turn's request time, so its completion reads unread", () => {
+    const requestedAt = "2026-01-01T00:00:05.000Z";
+    const stamp = resolveThreadVisitStamp({
+      updatedAt,
+      latestTurn: { requestedAt, completedAt: null } as never,
+    });
+    expect(stamp).toBe(requestedAt);
     expect(
       hasUnseenCompletion(
-        { latestTurn: { completedAt: "2026-01-01T00:02:00.000Z" } as never },
-        visitedAt,
+        { latestTurn: { completedAt: "2026-01-01T00:00:20.000Z" } as never },
+        stamp,
       ),
     ).toBe(true);
+  });
+
+  it("stamps the thread's last server update when it has no turn yet", () => {
+    expect(resolveThreadVisitStamp({ updatedAt, latestTurn: null })).toBe(updatedAt);
   });
 });
 

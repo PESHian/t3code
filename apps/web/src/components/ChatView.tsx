@@ -2111,18 +2111,14 @@ export default function ChatView(props: ChatViewProps) {
   // a completion that lands after the user leaves still signals. See
   // resolveThreadVisitStamp for what is stamped; markThreadVisited never moves
   // the timestamp backwards.
+  const serverThreadVisitedAt = serverThread ? resolveThreadVisitStamp(serverThread) : null;
   useEffect(() => {
-    if (!serverThread?.id) return;
+    if (!serverThread?.id || serverThreadVisitedAt === null) return;
     markThreadVisited(
       scopedThreadKey(scopeThreadRef(serverThread.environmentId, serverThread.id)),
-      resolveThreadVisitStamp(serverThread.latestTurn?.completedAt, new Date().toISOString()),
+      serverThreadVisitedAt,
     );
-  }, [
-    markThreadVisited,
-    serverThread?.environmentId,
-    serverThread?.id,
-    serverThread?.latestTurn?.completedAt,
-  ]);
+  }, [markThreadVisited, serverThread?.environmentId, serverThread?.id, serverThreadVisitedAt]);
   useEffect(() => {
     setMountedTerminalThreadKeys((currentThreadIds) => {
       const nextThreadIds = reconcileMountedTerminalThreadIds({
