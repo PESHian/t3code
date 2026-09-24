@@ -1,3 +1,4 @@
+import { useMarkThreadVisited } from "./use-thread-visits";
 import { makeTurnCommandMetadata } from "../../lib/commandMetadata";
 import { enqueueThreadOutboxMessage } from "../../state/thread-outbox";
 import {
@@ -336,6 +337,19 @@ function ThreadRouteContent(
   } = useThreadSelection();
   const selectedThreadDetailState = props.selectedThreadDetailState;
   const selectedThreadDetail = Option.getOrNull(selectedThreadDetailState.data);
+  // Reading a finished thread clears the list's Done label. The visit is stamped at the
+  // turn's completion time, not now, so it clears exactly the completion the reader is
+  // looking at; a completion that lands later still gets its signal.
+  const markThreadVisited = useMarkThreadVisited();
+  const visitedThreadKey =
+    selectedThread === null
+      ? null
+      : scopedThreadKey(selectedThread.environmentId, selectedThread.id);
+  const visitedCompletedAt = selectedThread?.latestTurn?.completedAt ?? null;
+  useEffect(() => {
+    if (visitedThreadKey === null || visitedCompletedAt === null) return;
+    markThreadVisited(visitedThreadKey, visitedCompletedAt);
+  }, [markThreadVisited, visitedThreadKey, visitedCompletedAt]);
   // "Load earlier turns" header state for windowed (paginated) thread loads.
   const loadEarlierTurns = useMemo(() => {
     if (selectedThread === null || !threadHasOlderTurns(selectedThreadDetailState)) {
